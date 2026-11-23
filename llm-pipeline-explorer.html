@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    .btn-primary {
+      background: #4285F4;
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { background: #3367D6; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(66,133,244,0.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-secondary {
+      background: #FBBC04;
+      color: #333;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: #F9AB00; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(251,188,4,0.3); }
+    .card-section {
+      background: var(--card, #fff);
+      border: 1px solid var(--card-border, #e5e7eb);
+      border-radius: 14px;
+      padding: 24px;
+      transition: box-shadow 0.2s;
+    }
+    .card-section:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .input-field {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border, #d1d5db);
+      border-radius: 8px;
+      background: var(--background, #fff);
+      color: var(--foreground, #1a1a1a);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-field:focus { border-color: #4285F4; box-shadow: 0 0 0 3px rgba(66,133,244,0.12); }
+    textarea.input-field { resize: vertical; min-height: 80px; font-family: inherit; }
+    .small-input {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border, #d1d5db);
+      border-radius: 8px;
+      background: var(--background, #fff);
+      color: var(--foreground, #1a1a1a);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .small-input:focus { border-color: #4285F4; box-shadow: 0 0 0 3px rgba(66,133,244,0.12); }
+    .token-chip {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      margin: 3px;
+      transition: transform 0.15s;
+    }
+    .token-chip:hover { transform: scale(1.05); }
+    .pill-btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .pill-btn.active { transform: scale(1.05); }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 8px;
+    }
+    canvas#embed3d { border-radius: 12px; cursor: grab; }
+    canvas#embed3d:active { cursor: grabbing; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.35s ease-out; }
+  </style>
+</head>
+<body class="bg-[var(--background,#fafbfc)] text-[var(--foreground,#1a1a1a)] antialiased p-0 m-0">
+
+  <!-- Header -->
+  <div class="text-center pt-10 pb-6 px-4">
+    <div class="inline-flex items-center gap-2 mb-3">
+      <div class="w-3 h-3 rounded-full" style="background:#4285F4"></div>
+      <div class="w-3 h-3 rounded-full" style="background:#EA4335"></div>
+      <div class="w-3 h-3 rounded-full" style="background:#FBBC04"></div>
+      <div class="w-3 h-3 rounded-full" style="background:#34A853"></div>
+    </div>
+    <h1 class="text-3xl font-bold tracking-tight" style="color:#4285F4">LLM Pipeline Explorer</h1>
+    <p class="text-sm mt-2" style="color:var(--muted-foreground,#6b7280)">Tokenize · Embed · Explore — step through the pipeline interactively</p>
+  </div>
+
+  <div class="max-w-2xl mx-auto px-4 pb-12 space-y-5">
+
+    <!-- 1. Training Context -->
+    <div class="card-section">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-2 h-2 rounded-full" style="background:#4285F4"></div>
+        <h2 class="text-sm font-bold" style="color:#4285F4">Training Context</h2>
+      </div>
+      <textarea id="trainingCtx" class="input-field" placeholder="Paste your training corpus here…&#10;e.g. The cat sat on the mat. The dog ran in the park.">The cat sat on the mat. The dog ran in the park. A quick brown fox jumps over the lazy dog.</textarea>
+    </div>
+
+    <!-- 2. Vocabulary Builder -->
+    <div class="card-section">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-2 h-2 rounded-full" style="background:#34A853"></div>
+        <h2 class="text-sm font-bold" style="color:#34A853">Vocabulary Builder</h2>
+      </div>
+      <div class="flex gap-3 mb-4">
+        <div class="flex-1">
+          <label class="section-label" style="color:var(--muted-foreground,#6b7280)">Vocabulary Size</label>
+          <input id="vocabSize" type="number" value="50" min="5" max="500" class="small-input" />
+        </div>
+        <div class="flex-1">
+          <label class="section-label" style="color:var(--muted-foreground,#6b7280)">UNK (Unknown) Token</label>
+          <input id="unkToken" type="text" value="<UNK>" class="small-input" />
+        </div>
+      </div>
+      <button id="buildVocabBtn" class="btn-primary w-full" onclick="buildVocab()">
+        Build Vocabulary
+      </button>
+      <div id="vocabOutput" class="mt-4 hidden fade-in">
+        <p class="section-label" style="color:var(--muted-foreground,#6b7280)">Built Vocabulary</p>
+        <div id="vocabList" class="flex flex-wrap gap-1"></div>
+      </div>
+    </div>
+
+    <!-- 3. Tokeniser -->
+    <div class="card-section">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-2 h-2 rounded-full" style="background:#EA4335"></div>
+        <h2 class="text-sm font-bold" style="color:#EA4335">Sentence Tokeniser</h2>
+      </div>
+      <input id="encodeSentence" type="text" class="input-field mb-3" placeholder="Encode a sentence… e.g. The cat jumped high" />
+      <button class="btn-secondary w-full" onclick="tokenise()">
+        Tokenise
+      </button>
+      <div id="tokenOutput" class="mt-4 hidden fade-in">
+        <p class="section-label" style="color:var(--muted-foreground,#6b7280)">Tokens</p>
+        <div id="tokenList" class="flex flex-wrap"></div>
+        <div id="tokenIds" class="mt-2 text-xs font-mono" style="color:var(--muted-foreground,#6b7280)"></div>
+      </div>
+    </div>
+
+    <!-- 4. Embedding Explorer -->
+    <div class="card-section">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-2 h-2 rounded-full" style="background:#FBBC04"></div>
+        <h2 class="text-sm font-bold" style="color:#FBBC04">Embedding Explorer</h2>
+      </div>
+
+      <label class="section-label" style="color:var(--muted-foreground,#6b7280)">Context for Embeddings</label>
+      <textarea id="embedCtx" class="input-field mb-4" rows="2" placeholder="Enter context to see how embeddings shift…&#10;e.g. The bank of the river vs. The bank gave a loan"></textarea>
+
+      <!-- Toggle Row -->
+      <div class="flex flex-wrap gap-3 mb-2">
+        <div>
+          <p class="section-label" style="color:var(--muted-foreground,#6b7280)">Type</p>
+          <div class="flex gap-2">
+            <button class="pill-btn active" id="pill-static" onclick="setPill('type','static')" style="background:#E8F0FE;color:#4285F4;border-color:#4285F4">Static</button>
+            <button class="pill-btn" id="pill-contextual" onclick="setPill('type','contextual')" style="background:var(--background,#f9fafb);color:var(--muted-foreground,#6b7280);border-color:var(--border,#d1d5db)">Contextual</button>
+          </div>
+        </div>
+        <div>
+          <p class="section-label" style="color:var(--muted-foreground,#6b7280)">Basis</p>
+          <div class="flex gap-2">
+            <button class="pill-btn active" id="pill-spelling" onclick="setPill('basis','spelling')" style="background:#FEF7E0;color:#E37400;border-color:#FBBC04">Spelling</button>
+            <button class="pill-btn" id="pill-meaning" onclick="setPill('basis','meaning')" style="background:var(--background,#f9fafb);color:var(--muted-foreground,#6b7280);border-color:var(--border,#d1d5db)">Meaning</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D Chart -->
+      <div class="mt-4 relative">
+        <div class="flex items-center justify-between mb-2">
+          <p class="section-label mb-0" style="color:var(--muted-foreground,#6b7280)">3D Embedding Space</p>
+          <button id="toggleChartBtn" onclick="toggle3D()" class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#FDECEA;color:#EA4335;cursor:pointer;border:none">Hide Chart</button>
+        </div>
+        <div id="chartWrap">
+          <canvas id="embed3d" width="580" height="360" style="width:100%;background:var(--card,#fff);border:1px solid var(--card-border,#e5e7eb)"></canvas>
+          <p class="text-center text-xs mt-2" style="color:var(--muted-foreground,#9ca3af)">Click & drag to rotate · Scroll to zoom</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-xs pt-2" style="color:var(--muted-foreground,#9ca3af)">
+      <span style="color:#4285F4">●</span>
+      <span style="color:#EA4335">●</span>
+      <span style="color:#FBBC04">●</span>
+      <span style="color:#34A853">●</span>
+      &nbsp; LLM Pipeline Explorer
+    </p>
+  </div>
+
+<script>
+// ── State ──
+let vocab = {};
+let vocabArr = [];
+let embeddingType = 'static';
+let embeddingBasis = 'spelling';
+let points3d = [];
+let labels3d = [];
+let angleX = 0.4, angleY = 0.6, zoom = 1;
+let dragging = false, lastMx = 0, lastMy = 0;
+
+const TOKEN_COLORS = ['#4285F4','#EA4335','#FBBC04','#34A853','#8E44AD','#E67E22','#1ABC9C','#2980B9','#D35400','#27AE60'];
+
+// ── Vocabulary ──
+function buildVocab() {
+  const text = document.getElementById('trainingCtx').value.trim();
+  if (!text) return;
+  const maxSize = parseInt(document.getElementById('vocabSize').value) || 50;
+  const unk = document.getElementById('unkToken').value || '<UNK>';
+
+  // word frequency
+  const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
+  const freq = {};
+  words.forEach(w => freq[w] = (freq[w]||0) + 1);
+  const sorted = Object.entries(freq).sort((a,b) => b[1]-a[1]);
+
+  vocab = {};
+  vocabArr = [];
+  vocab[unk] = 0;
+  vocabArr.push(unk);
+  sorted.slice(0, maxSize - 1).forEach(([w], i) => {
+    vocab[w] = i + 1;
+    vocabArr.push(w);
+  });
+
+  // Render
+  const container = document.getElementById('vocabList');
+  container.innerHTML = '';
+  vocabArr.forEach((w, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'token-chip';
+    const c = TOKEN_COLORS[i % TOKEN_COLORS.length];
+    chip.style.background = c + '18';
+    chip.style.color = c;
+    chip.style.border = '1px solid ' + c + '40';
+    chip.textContent = `${w} [${i}]`;
+    container.appendChild(chip);
+  });
+
+  document.getElementById('vocabOutput').classList.remove('hidden');
+  generateEmbeddings();
+}
+
+// ── Tokenise ──
+function tokenise() {
+  const sentence = document.getElementById('encodeSentence').value.trim();
+  if (!sentence) return;
+  const unk = document.getElementById('unkToken').value || '<UNK>';
+  const words = sentence.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
+
+  const container = document.getElementById('tokenList');
+  const idsEl = document.getElementById('tokenIds');
+  container.innerHTML = '';
+  const ids = [];
+
+  words.forEach((w, i) => {
+    const inVocab = vocab.hasOwnProperty(w);
+    const id = inVocab ? vocab[w] : (vocab[unk] ?? '?');
+    ids.push(id);
+
+    const chip = document.createElement('span');
+    chip.className = 'token-chip fade-in';
+    chip.style.animationDelay = (i * 60) + 'ms';
+    chip.style.animationFillMode = 'both';
+
+    if (inVocab) {
+      const c = TOKEN_COLORS[id % TOKEN_COLORS.length];
+      chip.style.background = c + '18';
+      chip.style.color = c;
+      chip.style.border = '1px solid ' + c + '40';
+      chip.textContent = w;
+    } else {
+      chip.style.background = '#EA433518';
+      chip.style.color = '#EA4335';
+      chip.style.border = '1px solid #EA433540';
+      chip.textContent = `${w} → ${unk}`;
+    }
+    container.appendChild(chip);
+  });
+
+  idsEl.textContent = 'IDs: [' + ids.join(', ') + ']';
+  document.getElementById('tokenOutput').classList.remove('hidden');
+}
+
+// ── Pill Toggles ──
+function setPill(group, value) {
+  if (group === 'type') {
+    embeddingType = value;
+    setActive('pill-static', value === 'static', '#E8F0FE', '#4285F4');
+    setActive('pill-contextual', value === 'contextual', '#E8F0FE', '#4285F4');
+  } else {
+    embeddingBasis = value;
+    setActive('pill-spelling', value === 'spelling', '#FEF7E0', '#E37400');
+    setActive('pill-meaning', value === 'meaning', '#FEF7E0', '#E37400');
+  }
+  generateEmbeddings();
+}
+function setActive(id, on, bg, fg) {
+  const el = document.getElementById(id);
+  if (on) {
+    el.classList.add('active');
+    el.style.background = bg; el.style.color = fg; el.style.borderColor = fg;
+  } else {
+    el.classList.remove('active');
+    el.style.background = 'var(--background,#f9fafb)';
+    el.style.color = 'var(--muted-foreground,#6b7280)';
+    el.style.borderColor = 'var(--border,#d1d5db)';
+  }
+}
+
+// ── Embeddings (Simulated) ──
+function generateEmbeddings() {
+  if (vocabArr.length === 0) return;
+  points3d = [];
+  labels3d = [];
+
+  // Seed-based pseudo-random for consistency
+  function seededRand(seed) {
+    let s = seed;
+    return function() { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
+  }
+
+  vocabArr.forEach((word, idx) => {
+    let x, y, z;
+    if (embeddingBasis === 'spelling') {
+      // cluster by first letter
+      const charCode = word.charCodeAt(0) || 65;
+      const rng = seededRand(charCode * 100 + idx + (embeddingType === 'contextual' ? 9999 : 0));
+      const cluster = (charCode - 97) / 26;
+      x = cluster * 2 - 1 + (rng() - 0.5) * 0.5;
+      y = (rng() - 0.5) * 1.6;
+      z = (rng() - 0.5) * 1.6;
+    } else {
+      // meaning-based: scatter more, group common words
+      const rng = seededRand(idx * 73 + 42 + (embeddingType === 'contextual' ? 5555 : 0));
+      x = (rng() - 0.5) * 2;
+      y = (rng() - 0.5) * 2;
+      z = (rng() - 0.5) * 2;
+    }
+
+    if (embeddingType === 'contextual') {
+      // Add slight perturbation to simulate contextual shift
+      const ctx = document.getElementById('embedCtx').value || '';
+      const shift = ctx.includes(word) ? 0.3 : 0;
+      x += shift;
+      y -= shift * 0.5;
+    }
+
+    points3d.push([x, y, z]);
+    labels3d.push(word);
+  });
+
+  draw3D();
+}
+
+// ── 3D Chart ──
+function toggle3D() {
+  const wrap = document.getElementById('chartWrap');
+  const btn = document.getElementById('toggleChartBtn');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = 'block';
+    btn.textContent = 'Hide Chart';
+    btn.style.background = '#FDECEA'; btn.style.color = '#EA4335';
+  } else {
+    wrap.style.display = 'none';
+    btn.textContent = 'Show Chart';
+    btn.style.background = '#E8F5E9'; btn.style.color = '#34A853';
+  }
+}
+
+function project(p) {
+  const [x, y, z] = p;
+  const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+  const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+  // Rotate Y
+  let rx = x * cosY + z * sinY;
+  let rz = -x * sinY + z * cosY;
+  // Rotate X
+  let ry = y * cosX - rz * sinX;
+  rz = y * sinX + rz * cosX;
+  // Perspective
+  const d = 4 + rz * zoom;
+  const scale = 200 * zoom / d;
+  return { sx: rx * scale, sy: -ry * scale, depth: rz };
+}
+
+function draw3D() {
+  const canvas = document.getElementById('embed3d');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+
+  // Determine colors based on theme
+  const isLight = document.documentElement.classList.contains('light') ||
+    !document.documentElement.classList.contains('dark');
+  const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || (isLight ? '#ffffff' : '#1e1e1e');
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)';
+  const axisLabelColor = isLight ? '#9ca3af' : '#6b7280';
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw grid on XZ plane
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 0.5;
+  for (let i = -5; i <= 5; i++) {
+    const a = project([i * 0.3, 0, -1.5]);
+    const b = project([i * 0.3, 0, 1.5]);
+    ctx.beginPath(); ctx.moveTo(cx + a.sx, cy + a.sy); ctx.lineTo(cx + b.sx, cy + b.sy); ctx.stroke();
+    const c = project([-1.5, 0, i * 0.3]);
+    const d = project([1.5, 0, i * 0.3]);
+    ctx.beginPath(); ctx.moveTo(cx + c.sx, cy + c.sy); ctx.lineTo(cx + d.sx, cy + d.sy); ctx.stroke();
+  }
+
+  // Axes
+  const axes = [
+    { from: [0,0,0], to: [1.5,0,0], label: 'dim₁', color: '#4285F4' },
+    { from: [0,0,0], to: [0,1.5,0], label: 'dim₂', color: '#EA4335' },
+    { from: [0,0,0], to: [0,0,1.5], label: 'dim₃', color: '#34A853' }
+  ];
+  axes.forEach(ax => {
+    const a = project(ax.from), b = project(ax.to);
+    ctx.strokeStyle = ax.color + '90';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx + a.sx, cy + a.sy); ctx.lineTo(cx + b.sx, cy + b.sy); ctx.stroke();
+    ctx.fillStyle = axisLabelColor;
+    ctx.font = '10px system-ui';
+    ctx.fillText(ax.label, cx + b.sx + 4, cy + b.sy + 3);
+  });
+
+  // Points with depth sorting
+  const projected = points3d.map((p, i) => ({ ...project(p), idx: i }));
+  projected.sort((a, b) => a.depth - b.depth);
+
+  projected.forEach(pt => {
+    const c = TOKEN_COLORS[pt.idx % TOKEN_COLORS.length];
+    const r = Math.max(3, 7 - pt.depth * 1.5);
+    // Glow
+    ctx.beginPath();
+    ctx.arc(cx + pt.sx, cy + pt.sy, r + 3, 0, Math.PI * 2);
+    ctx.fillStyle = c + '20';
+    ctx.fill();
+    // Dot
+    ctx.beginPath();
+    ctx.arc(cx + pt.sx, cy + pt.sy, r, 0, Math.PI * 2);
+    ctx.fillStyle = c;
+    ctx.fill();
+    // Label
+    ctx.fillStyle = c;
+    ctx.font = 'bold 10px system-ui';
+    ctx.fillText(labels3d[pt.idx], cx + pt.sx + r + 3, cy + pt.sy + 3);
+  });
+}
+
+// ── Mouse controls ──
+const canvas = document.getElementById('embed3d');
+canvas.addEventListener('mousedown', e => { dragging = true; lastMx = e.clientX; lastMy = e.clientY; });
+window.addEventListener('mouseup', () => { dragging = false; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  angleY += (e.clientX - lastMx) * 0.008;
+  angleX += (e.clientY - lastMy) * 0.008;
+  lastMx = e.clientX; lastMy = e.clientY;
+  draw3D();
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(0.3, Math.min(3, zoom - e.deltaY * 0.002));
+  draw3D();
+}, { passive: false });
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) { dragging = true; lastMx = e.touches[0].clientX; lastMy = e.touches[0].clientY; }
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  if (!dragging || e.touches.length !== 1) return;
+  angleY += (e.touches[0].clientX - lastMx) * 0.008;
+  angleX += (e.touches[0].clientY - lastMy) * 0.008;
+  lastMx = e.touches[0].clientX; lastMy = e.touches[0].clientY;
+  draw3D();
+}, { passive: true });
+canvas.addEventListener('touchend', () => { dragging = false; }, { passive: true });
+
+// Theme sync
+window.addEventListener('themechange', () => { draw3D(); });
+
+// Auto-rotate on idle
+let idleTimer;
+function startAutoRotate() {
+  clearInterval(idleTimer);
+  idleTimer = setInterval(() => { angleY += 0.004; draw3D(); }, 30);
+}
+function stopAutoRotate() { clearInterval(idleTimer); }
+canvas.addEventListener('mouseenter', stopAutoRotate);
+canvas.addEventListener('mouseleave', startAutoRotate);
+
+// Initial draw
+draw3D();
+startAutoRotate();
+</script>
+</body>
+</html>
